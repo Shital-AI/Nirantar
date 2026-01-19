@@ -1,0 +1,46 @@
+openapi: 3.0.0
+info:
+  title: Livestream Control API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/channels:
+    get:
+      summary: List all channels with status
+      responses:
+        '200':
+          description: List of channels
+    post:
+      summary: Create new channel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+  
+  /api/channels/{naame}/control:
+    post:
+      summary: Perform action on channel (start_loop, stop_loop, force_failover)
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action: { type: string, enum: [start_loop, stop_loop, force_obs] }
+
+  /api/hooks/on_publish:
+    post:
+      summary: SRS Callback
+      
+  /health:
+    get:
+      summary: System Health

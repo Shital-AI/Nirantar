@@ -1,0 +1,164 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-livestream_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-livestream_db}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-livestream_admin} -d ${POSTGRES_DB:-livestream_db}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - livestream-net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  srs:
+    image: ossrs/srs:5
+    container_name: srs
+    restart: always
+    volumes:
+      - ./srs/srs.conf:/usr/local/srs/conf/srs.conf:ro
+      - ./logs/srs:/usr/local/srs/objs/logs
+      - ./media:/app/media:ro
+    ports:
+      - "1935:1935" # RTMP
+      - "1985:1985" # API
+      - "8080:8080" # HTTP/HLS
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost:1985/api/v1/versions || exit 1" ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - livestream-net
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2'
+
+  controller:
+    build:
+      context: ./apps/controller
+      dockerfile: Dockerfile
+    container_name: controller
+    restart: always
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://livestream_admin:secure_password@postgres:5432/livestream_db?sslmode=disable}
+      SRS_API_URL: ${SRS_API_URL:-http://srs:1985}
+      DOCKER_NETWORK: shital_rtmp_livestream-net
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      ENABLE_AUTO_FAILOVER: ${ENABLE_AUTO_FAILOVER:-true}
+      MEDIA_PATH: /app/media
+      MEDIA_HOST_PATH: ${PWD}/media
+      APP_URL: ${APP_URL:-http://localhost:3002}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./media:/app/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      srs:
+        condition: service_started
+      relay-image-builder:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost:8080/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - livestream-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  web-admin:
+    build:
+      context: ./apps/web-admin
+      dockerfile: Dockerfile
+    container_name: web-admin
+    restart: always
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://livestream_admin:secure_password@postgres:5432/livestream_db?sslmode=disable}
+      CONTROLLER_API_URL: ${CONTROLLER_API_URL:-http://controller:8080}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-super-secret-key-change-in-production}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3002}
+      # RTMP server public hostname/IP (leave empty to use browser hostname)
+      PUBLIC_HOST: ${PUBLIC_HOST:-}
+      RTMP_HOST: ${RTMP_HOST:-}
+      RTMP_PORT: ${RTMP_PORT:-1935}
+    ports:
+      - "3002:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      controller:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - livestream-net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  loop-image-builder:
+    build:
+      context: ./apps/loop-publisher
+      dockerfile: Dockerfile
+    image: local/loop-publisher:latest
+    command: [ "echo", "Image built" ]
+    restart: "no"
+
+  # Build Relay Manager Image
+  relay-image-builder:
+    build:
+      context: ./apps/relay
+      dockerfile: Dockerfile
+    image: local/relay-manager:latest
+    container_name: relay-image-builder
+    entrypoint: [ "/bin/sh", "-c" ]
+    command: [ "echo 'Relay Manager image built'" ]
+    restart: "no"
+
+  proxy:
+    image: nginx:alpine
+    container_name: proxy
+    restart: always
+    volumes:
+      - ./apps/proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "${PORT:-80}:80"
+    depends_on:
+      - web-admin
+      - srs
+    networks:
+      - livestream-net
+
+networks:
+  livestream-net:
+    driver: bridge
+
+volumes:
+  pg_data:

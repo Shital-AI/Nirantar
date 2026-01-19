@@ -1,0 +1,27 @@
+# Python GUI Desktop App for RTMP Streaming
+# Core GUI framework with modern styling
+customtkinter>=5.2.0
+Pillow>=10.0.0
+
+# Database
+# Using built-in sqlite3
+
+# Process management (for FFmpeg)
+psutil>=5.9.0
+
+# System tray support
+pystray>=0.19.0
+
+# Configuration
+python-dotenv>=1.0.0
+
+# For video thumbnail generation (optional)
+opencv-python>=4.8.0
+
+# Packaging (optional, for creating executables)
+# pyinstaller>=6.0.0
+
+# RTMP Server
+pyrtmp>=0.3.0
+bitstring>=4.1.0
+bitarray>=2.8.0

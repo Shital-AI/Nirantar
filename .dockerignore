@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+LICENSE
+design/
+docs/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Logs
+logs/
+*.log
+
+# Media files (too large)
+media/*.mp4
+media/*.flv
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Desktop app (not needed in Docker)
+desktop-app/
+
+# Local development
+*.local

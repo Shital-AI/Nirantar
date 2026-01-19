@@ -1,0 +1,68 @@
+# Files and directories to ignore
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+build/
+dist/
+*.spec
+
+# Logs
+*.log
+logs/*.log
+srs_logs/
+
+# Media files (too large for git)
+media/*.mp4
+media/*.flv
+media/*.ts
+media/*.m3u8
+
+# SSL/TLS certificates
+*.pem
+*.key
+*.crt
+
+# Database
+pg_data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker volumes (if mounted locally)
+docker/data/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+apps/web-admin/.next
+
+# Large Media
+media/*.mp4
+media/*.optimized
+
+# Build & Cache
+apps/web-admin/.next/
+**/node_modules/
+**/venv/
