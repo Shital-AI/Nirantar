@@ -133,10 +133,10 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ---
 
 <div align="center">
-  <p>Built with ❤️ for the Community</p>
+  <p>Built with ❤️ By Shital AI</p>
   <p>
     <a href="https://github.com/Shital-AI/Nirantar">GitHub</a> • 
-    <a href="#">Website</a> • 
-    <a href="#">Support</a>
+    <a href="https://www.shitalai.com">Website</a> • 
+    <a href="mailto:contact@shitalai.com">Support</a>
   </p>
 </div>
